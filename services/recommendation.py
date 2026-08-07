@@ -54,6 +54,13 @@ def _safe_int(value, default):
         return default
 
 
+def _safe_float(value, default):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def resolve_start_date(form_data):
     """Returns the trip's Day 1 date. Defaults to today if the traveler didn't
     specify one, so the itinerary always shows real calendar dates."""

@@ -4,7 +4,7 @@ import sys
 
 from database.db import list_hotels, list_restaurants
 from services.recommendation import (
-    _safe_int, build_budget_breakdown, build_packing_list, build_itinerary,
+    _safe_int, _safe_float, build_budget_breakdown, build_packing_list, build_itinerary,
     rank_destinations, resolve_start_date, resolve_duration,
 )
 
@@ -153,35 +153,65 @@ def _gemini_plan(form_data, api_key, model_name):
     if not required.issubset(data) or not data['destinations'] or not data['itinerary']:
         raise ValueError('Gemini response missing required fields')
 
+    default_budget = _safe_int(form_data.get('budget'), 30000)
     destinations = [
         {
-            'name': d.get('name', 'Information unavailable.'),
+            'name': d.get('name') or 'Information unavailable.',
             'state': d.get('state', ''),
             'category': d.get('category', ''),
-            'lat': d.get('lat'),
-            'lng': d.get('lng'),
-            'rating': d.get('rating', 4.5),
-            'weather_text': d.get('weather_text', 'Pleasant'),
+            'lat': _safe_float(d.get('lat'), None),
+            'lng': _safe_float(d.get('lng'), None),
+            'rating': _safe_float(d.get('rating'), 4.5),
+            'weather_text': d.get('weather_text') or 'Pleasant',
             'description': d.get('description', ''),
-            'nearby_attractions': d.get('nearby_attractions', []),
-            'budget': d.get('budget') or _safe_int(form_data.get('budget'), 30000),
+            'nearby_attractions': d.get('nearby_attractions') or [],
+            'budget': _safe_int(d.get('budget'), default_budget),
             'why_included': d.get('why_included', ''),
         }
         for d in data['destinations']
     ]
 
+    hotels = [
+        {
+            'name': h.get('name') or 'Information unavailable.',
+            'category': h.get('category', ''),
+            'price_per_night': _safe_int(h.get('price_per_night'), 0),
+            'rating': _safe_float(h.get('rating'), 4.5),
+        }
+        for h in (data.get('hotel_recommendations') or [])[:3]
+    ]
+    restaurants = [
+        {
+            'name': r.get('name') or 'Information unavailable.',
+            'cuisine': r.get('cuisine', ''),
+            'price_range': r.get('price_range', ''),
+            'rating': _safe_float(r.get('rating'), 4.5),
+        }
+        for r in (data.get('restaurant_recommendations') or [])[:3]
+    ]
+
+    itinerary = [
+        {
+            'day': _safe_int(item.get('day'), index + 1),
+            'date': item.get('date', ''),
+            'destination': item.get('destination') or 'Information unavailable.',
+            'morning': item.get('morning', 'Information unavailable.'),
+            'afternoon': item.get('afternoon', 'Information unavailable.'),
+            'evening': item.get('evening', 'Information unavailable.'),
+            'night': item.get('night', 'Information unavailable.'),
+            'reason': item.get('reason', ''),
+        }
+        for index, item in enumerate(data['itinerary'])
+    ]
+
     narrative = {
-        'trip_summary': data['trip_summary'],
-        'confidence_score': data['confidence_score'],
-        'why_selected': data['why_selected'],
-        'alternative_destinations': data['alternative_destinations'],
-        'safety_note': data['safety_note'],
+        'trip_summary': data.get('trip_summary') or 'Information unavailable.',
+        'confidence_score': _safe_float(data.get('confidence_score'), 0.75),
+        'why_selected': data.get('why_selected') or [],
+        'alternative_destinations': data.get('alternative_destinations') or [],
+        'safety_note': data.get('safety_note') or 'Follow local advisories and keep emergency contacts handy.',
     }
-    return _assemble(
-        narrative, data['itinerary'], destinations,
-        data.get('hotel_recommendations', [])[:3], data.get('restaurant_recommendations', [])[:3],
-        form_data, source='gemini',
-    )
+    return _assemble(narrative, itinerary, destinations, hotels, restaurants, form_data, source='gemini')
 
 
 def build_ai_plan(form_data, search_history=None):
