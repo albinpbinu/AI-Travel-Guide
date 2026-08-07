@@ -88,7 +88,7 @@ def build_ai_plan(form_data, ranked):
         }
 
     api_key = os.getenv('GEMINI_API_KEY', '')
-    model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+    model_name = os.getenv('GEMINI_MODEL', 'gemini-flash-latest')
 
     source = 'fallback'
     if api_key:
