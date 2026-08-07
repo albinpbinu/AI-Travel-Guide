@@ -12,7 +12,10 @@
                     {{ 'Gemini AI' if plan.source == 'gemini' else 'Local recommendation engine' }}
                 </span>
                 <h3 class="text-white mt-2 mb-1">{{ plan.trip_summary }}</h3>
-                <p class="text-muted-soft mb-0">Generated from your preferences and the internal destination dataset.</p>
+                <p class="text-muted-soft mb-0">
+                    {% if plan.source == 'gemini' %}Destinations and day-by-day plan suggested by Gemini AI based on your preferences.
+                    {% else %}Generated from your preferences using our local recommendation engine.{% endif %}
+                </p>
             </div>
             <div class="d-flex align-items-center gap-3">
                 <span class="confidence-badge"><i class="fa-solid fa-shield-check"></i> {{ (plan.confidence_score * 100) | round(0) }}% confidence</span>
@@ -34,7 +37,11 @@
                     <div class="d-flex align-items-center gap-3 mb-3">
                         <div class="day-badge">D{{ item.day }}</div>
                         <div>
-                            <h6 class="text-white mb-0">{{ item.destination }}</h6>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h6 class="text-white mb-0">{{ item.destination }}</h6>
+                                {% if item.date %}<span class="badge rounded-pill text-bg-secondary">{{ item.date }}</span>{% endif %}
+                                <a href="#dest-{{ item.destination | lower | replace(' ', '-') }}" class="small text-gradient text-decoration-none">View destination details</a>
+                            </div>
                             <p class="text-muted-soft small mb-0">{{ item.reason }}</p>
                         </div>
                     </div>
@@ -46,6 +53,32 @@
                     </div>
                 </div>
                 {% endfor %}
+            </div>
+
+            <div class="glass-card p-4 mb-4" data-aos="fade-up">
+                <h5 class="text-white mb-4"><i class="fa-solid fa-earth-asia text-gradient"></i> Destinations in This Itinerary</h5>
+                {% for d in ranked %}
+                <div id="dest-{{ d.name | lower | replace(' ', '-') }}" class="timeline-card">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                        <div>
+                            <h6 class="text-white mb-0">{{ d.name }}{% if d.state %}, {{ d.state }}{% endif %}</h6>
+                            <p class="text-muted-soft small mb-0">{{ d.category }} {% if d.weather_text %}· {{ d.weather_text }}{% endif %}</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if d.rating %}<span class="rating-pill"><i class="fa-solid fa-star"></i> {{ d.rating | round(1) }}</span>{% endif %}
+                            {% if d.budget %}<span class="text-soft small"><i class="fa-solid fa-wallet"></i> ₹{{ '{:,}'.format(d.budget) }}</span>{% endif %}
+                        </div>
+                    </div>
+                    {% if d.description %}<p class="text-soft small mb-2">{{ d.description }}</p>{% endif %}
+                    {% if d.why_included %}<p class="text-soft small mb-2"><i class="fa-solid fa-lightbulb text-gradient"></i> {{ d.why_included }}</p>{% endif %}
+                    {% if d.nearby_attractions %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for a in d.nearby_attractions %}<span class="badge rounded-pill text-bg-secondary">{{ a }}</span>{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if not ranked %}<p class="text-muted-soft small mb-0">Information unavailable.</p>{% endif %}
             </div>
 
             <div class="glass-card p-4 mb-4" data-aos="fade-up">
@@ -147,7 +180,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const stops = {{ ranked[:3] | tojson }};
+    const allStops = {{ ranked[:5] | tojson }};
+    const stops = allStops.filter(function (s) { return s.lat != null && s.lng != null; });
 
     if (stops.length && document.getElementById('itineraryMap')) {
         const map = L.map('itineraryMap').setView([stops[0].lat, stops[0].lng], 6);
@@ -164,6 +198,9 @@ document.addEventListener('DOMContentLoaded', function () {
             L.polyline(points, { color: '#5b8cff', weight: 3, dashArray: '6 8' }).addTo(map);
             map.fitBounds(points, { padding: [30, 30] });
         }
+    } else {
+        const mapEl = document.getElementById('itineraryMap');
+        if (mapEl) mapEl.outerHTML = '<p class="text-muted-soft small mb-0">Information unavailable — no map coordinates for this itinerary.</p>';
     }
 
     const ctx = document.getElementById('budgetChart');

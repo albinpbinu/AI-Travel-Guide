@@ -1,4 +1,8 @@
+from datetime import date, datetime, timedelta
+
 from database.db import list_destinations, MOOD_KEYWORDS
+
+MAX_DURATION_DAYS = 30
 
 
 def _as_text(value):
@@ -50,6 +54,23 @@ def _safe_int(value, default):
         return default
 
 
+def resolve_start_date(form_data):
+    """Returns the trip's Day 1 date. Defaults to today if the traveler didn't
+    specify one, so the itinerary always shows real calendar dates."""
+    raw = (form_data or {}).get('travel_date')
+    if raw:
+        try:
+            return datetime.strptime(raw, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    return date.today()
+
+
+def resolve_duration(form_data, default=3):
+    duration = _safe_int((form_data or {}).get('duration'), default)
+    return max(1, min(duration, MAX_DURATION_DAYS))
+
+
 SLOT_TEMPLATES = {
     'morning': 'Start the day exploring {attraction} and soaking in {name}\'s morning atmosphere.',
     'afternoon': 'Enjoy curated {state} experiences, local cuisine, and a visit to {attraction}.',
@@ -59,8 +80,10 @@ SLOT_TEMPLATES = {
 
 
 def build_itinerary(ranked, form_data):
-    duration = _safe_int(form_data.get('duration'), 3)
-    duration = max(1, min(duration, 7))
+    """Local, deterministic day-wise plan built from the internal destination
+    dataset. Used as the fallback when Gemini isn't available."""
+    duration = resolve_duration(form_data)
+    start_date = resolve_start_date(form_data)
     itinerary = []
     for day in range(1, duration + 1):
         destination = ranked[(day - 1) % len(ranked)] if ranked else None
@@ -70,6 +93,7 @@ def build_itinerary(ranked, form_data):
         attraction = attractions[(day - 1) % len(attractions)]
         itinerary.append({
             'day': day,
+            'date': (start_date + timedelta(days=day - 1)).strftime('%Y-%m-%d'),
             'destination': destination['name'],
             'morning': SLOT_TEMPLATES['morning'].format(attraction=attraction, name=destination['name']),
             'afternoon': SLOT_TEMPLATES['afternoon'].format(state=destination['state'], attraction=attraction),
@@ -103,11 +127,12 @@ def build_budget_breakdown(ranked, form_data):
 def build_packing_list(ranked, form_data):
     destination = ranked[0] if ranked else None
     base = ['Comfortable walking shoes', 'Reusable water bottle', 'Power bank', 'ID proof / documents', 'First-aid essentials']
-    if destination and destination['weather_text'] in ('Cold',):
+    weather_text = (destination or {}).get('weather_text')
+    if weather_text in ('Cold',):
         base += ['Thermal jacket', 'Woolen cap and gloves']
-    elif destination and destination['weather_text'] in ('Sunny', 'Warm'):
+    elif weather_text in ('Sunny', 'Warm'):
         base += ['Sunscreen', 'Sunglasses', 'Light cotton clothing']
-    elif destination and destination['weather_text'] == 'Humid':
+    elif weather_text == 'Humid':
         base += ['Rain jacket', 'Insect repellent']
     if form_data.get('adventure_level') == 'High':
         base.append('Sports/trekking gear')

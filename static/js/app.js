@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', function () {
     initHeroAnimation();
     initCounters();
     initPasswordMeter();
+    initPasswordToggle();
+    initPlanLoadingOverlay();
     initChatWidget();
 });
 
@@ -107,7 +109,47 @@ function initPasswordMeter() {
     });
 }
 
-/* ---------- Chat widget ---------- */
+/* ---------- Password show/hide toggle ---------- */
+function initPasswordToggle() {
+    document.querySelectorAll('.password-toggle').forEach((btn) => {
+        btn.addEventListener('click', function () {
+            const field = btn.closest('.password-field');
+            const input = field ? field.querySelector('input') : null;
+            if (!input) return;
+            const showing = input.type === 'text';
+            input.type = showing ? 'password' : 'text';
+            const icon = btn.querySelector('i');
+            if (icon) icon.className = showing ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+        });
+    });
+}
+
+/* ---------- Plan generation loading overlay ---------- */
+function initPlanLoadingOverlay() {
+    const overlay = document.getElementById('planLoadingOverlay');
+    const messageEl = document.getElementById('planLoadingMessage');
+    if (!overlay) return;
+    const messages = [
+        'Consulting our AI travel expert...',
+        'Scouting hidden gems for your trip...',
+        'Mapping out practical day-by-day plans...',
+        'Matching hotels and restaurants to your budget...',
+        'Double-checking the weather and best times to visit...',
+        'Packing your itinerary with local favorites...',
+    ];
+    document.querySelectorAll('[data-plan-form]').forEach((form) => {
+        form.addEventListener('submit', function () {
+            overlay.classList.add('open');
+            let i = 0;
+            setInterval(function () {
+                i = (i + 1) % messages.length;
+                if (messageEl) messageEl.textContent = messages[i];
+            }, 2200);
+        });
+    });
+}
+
+/* ---------- Chat widget (Gemini-backed via /api/chat) ---------- */
 function initChatWidget() {
     const toggle = document.getElementById('chatToggle');
     const panel = document.getElementById('chatPanel');
@@ -125,11 +167,23 @@ function initChatWidget() {
             if (!text) return;
             appendChatMessage(body, text, 'user');
             input.value = '';
-            setTimeout(() => {
-                appendChatMessage(body, canned_response(text), 'bot');
-                body.scrollTop = body.scrollHeight;
-            }, 400);
             body.scrollTop = body.scrollHeight;
+
+            const typing = appendChatMessage(body, 'Thinking...', 'bot');
+            fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text }),
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    typing.textContent = data.reply || "Sorry, I couldn't come up with a reply.";
+                    body.scrollTop = body.scrollHeight;
+                })
+                .catch(() => {
+                    typing.textContent = 'Having trouble reaching the assistant right now — try again in a moment.';
+                    body.scrollTop = body.scrollHeight;
+                });
         });
     }
 }
@@ -139,13 +193,5 @@ function appendChatMessage(body, text, role) {
     el.className = 'chat-msg ' + role;
     el.textContent = text;
     body.appendChild(el);
-}
-
-function canned_response(text) {
-    const lower = text.toLowerCase();
-    if (lower.includes('weather')) return 'Check the weather widget on your dashboard for live forecasts and packing tips.';
-    if (lower.includes('budget')) return 'Your itinerary page has a full budget breakdown with hotel, food, transport and ticket costs.';
-    if (lower.includes('pack')) return 'Your packing list adapts to destination weather and trip duration — see the itinerary page.';
-    if (lower.includes('emergency') || lower.includes('safety')) return 'Emergency numbers and safety notes are included with every generated itinerary.';
-    return 'I can help with itinerary questions, packing, weather, and budget. This assistant is a UI preview pending live Gemini wiring.';
+    return el;
 }

@@ -55,8 +55,11 @@ def build_itinerary_pdf(context):
     story.append(Paragraph(plan.get('trip_summary', 'Information unavailable.'), styles['TGBody']))
     story.append(Spacer(1, 0.4 * cm))
 
+    start_date = itinerary[0]['date'] if itinerary and itinerary[0].get('date') else 'Information unavailable.'
+    end_date = itinerary[-1]['date'] if itinerary and itinerary[-1].get('date') else 'Information unavailable.'
     summary_rows = [
         ['Destination', top.get('name', 'Information unavailable.')],
+        ['Dates', f"{start_date} to {end_date}"],
         ['Budget', f"Rs {form_data.get('budget', top.get('budget', 'Information unavailable.'))}"],
         ['Duration', f"{form_data.get('duration', len(itinerary))} day(s)"],
         ['Travel type', form_data.get('travel_type', 'Information unavailable.')],
@@ -78,7 +81,8 @@ def build_itinerary_pdf(context):
 
     story.append(Paragraph('Day-wise Schedule', styles['TGHeading']))
     for day in itinerary:
-        story.append(Paragraph(f"Day {day['day']} — {day['destination']}", styles['Heading4']))
+        date_suffix = f" ({day['date']})" if day.get('date') else ''
+        story.append(Paragraph(f"Day {day['day']}{date_suffix} — {day['destination']}", styles['Heading4']))
         for slot in ('morning', 'afternoon', 'evening', 'night'):
             story.append(Paragraph(f"<b>{slot.capitalize()}:</b> {day[slot]}", styles['TGBody']))
         story.append(Spacer(1, 0.25 * cm))

@@ -35,13 +35,19 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Password</label>
-                            <input name="password" type="password" class="form-control pw-input" placeholder="At least 8 characters" required>
+                            <div class="password-field">
+                                <input name="password" type="password" class="form-control pw-input" placeholder="At least 8 characters" required>
+                                <button type="button" class="password-toggle" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                            </div>
                             <div class="password-meter"><span></span></div>
                             <div class="password-meter-label small text-muted-soft mt-1"></div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Confirm password</label>
-                            <input name="confirm_password" type="password" class="form-control" placeholder="Re-enter password" required>
+                            <div class="password-field">
+                                <input name="confirm_password" type="password" class="form-control" placeholder="Re-enter password" required>
+                                <button type="button" class="password-toggle" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                            </div>
                         </div>
                         <div class="col-12">
                             <div class="form-check">

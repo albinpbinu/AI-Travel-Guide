@@ -5,8 +5,8 @@ from flask_login import LoginManager, login_user, logout_user, login_required, U
 from flask_wtf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from services.recommendation import rank_destinations, build_itinerary
-from services.gemini_service import build_ai_plan
+from services.recommendation import rank_destinations
+from services.gemini_service import build_ai_plan, chat_reply
 from services.weather_service import get_weather_snapshot
 from services.pdf_service import build_itinerary_pdf
 from services.nearby_service import get_nearby_essentials
@@ -233,9 +233,9 @@ def plan_form():
 def plan_trip():
     form_data = request.form.to_dict(flat=True)
     history_terms = _search_history_terms()
-    ranked = rank_destinations(profile=form_data, duration=int(form_data.get('duration', 5) or 5), search_history=history_terms)
-    plan = build_ai_plan(form_data, ranked)
-    itinerary = build_itinerary(ranked, form_data)
+    plan = build_ai_plan(form_data, search_history=history_terms)
+    itinerary = plan['itinerary']
+    ranked = plan['destinations']
 
     session['last_itinerary'] = {
         'form_data': form_data, 'ranked': ranked, 'plan': plan, 'itinerary': itinerary,
@@ -250,9 +250,18 @@ def plan_trip():
 @csrf.exempt
 def api_plan():
     payload = request.get_json(silent=True) or {}
-    ranked = rank_destinations(payload, duration=int(payload.get('duration', 5) or 5))
-    response = build_ai_plan(payload, ranked)
+    response = build_ai_plan(payload)
     return jsonify(response)
+
+
+@app.route('/api/chat', methods=['POST'])
+@csrf.exempt
+def api_chat():
+    payload = request.get_json(silent=True) or {}
+    message = (payload.get('message') or '').strip()[:500]
+    if not message:
+        return jsonify({'reply': "Ask me anything about your trip — itinerary, packing, weather, or budget."})
+    return jsonify({'reply': chat_reply(message)})
 
 
 @app.route('/trips/save', methods=['POST'])

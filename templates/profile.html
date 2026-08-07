@@ -47,16 +47,25 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">Current password</label>
-                            <input type="password" class="form-control" name="current_password" required>
+                            <div class="password-field">
+                                <input type="password" class="form-control" name="current_password" required>
+                                <button type="button" class="password-toggle" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">New password</label>
-                            <input type="password" class="form-control pw-input" name="new_password" required>
+                            <div class="password-field">
+                                <input type="password" class="form-control pw-input" name="new_password" required>
+                                <button type="button" class="password-toggle" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                            </div>
                             <div class="password-meter"><span></span></div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Confirm new password</label>
-                            <input type="password" class="form-control" name="confirm_password" required>
+                            <div class="password-field">
+                                <input type="password" class="form-control" name="confirm_password" required>
+                                <button type="button" class="password-toggle" aria-label="Show password"><i class="fa-solid fa-eye"></i></button>
+                            </div>
                         </div>
                         <div class="col-12"><button class="btn btn-glass rounded-pill px-4">Update Password</button></div>
                     </div>

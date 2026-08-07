@@ -21,11 +21,13 @@
             <div class="col-lg-6">
                 <div class="glass-card hero-panel p-4">
                     <h4 class="text-white mb-3"><i class="fa-solid fa-route text-gradient"></i> Quick Trip Planner</h4>
-                    <form action="{{ url_for('plan_trip') if current_user.is_authenticated else url_for('login') }}" method="{{ 'post' if current_user.is_authenticated else 'get' }}">
+                    {% if current_user.is_authenticated %}
+                    <form action="{{ url_for('plan_trip') }}" method="post" id="quickPlanForm" data-plan-form="true">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="row g-3">
-                            <div class="col-md-6"><label class="form-label">Destination preference</label><input class="form-control" name="destination_preference" placeholder="e.g. Hill station"></div>
-                            <div class="col-md-6"><label class="form-label">Budget (₹)</label><input class="form-control" name="budget" type="number" placeholder="30000"></div>
-                            <div class="col-md-6"><label class="form-label">Trip duration (days)</label><input class="form-control" name="duration" type="number" placeholder="5"></div>
+                            <div class="col-md-6"><label class="form-label">Destination preference</label><input class="form-control" name="destination_preference" placeholder="e.g. hill station, Munnar"></div>
+                            <div class="col-md-6"><label class="form-label">Budget (₹)</label><input class="form-control" name="budget" type="number" placeholder="e.g. 30000"></div>
+                            <div class="col-md-6"><label class="form-label">Trip duration (days)</label><input class="form-control" name="duration" type="number" min="1" max="30" placeholder="e.g. 5"></div>
                             <div class="col-md-6">
                                 <label class="form-label">Travel type</label>
                                 <select class="form-select" name="travel_type">
@@ -35,8 +37,12 @@
                             <div class="col-md-12"><button class="btn btn-primary w-100">Generate Itinerary <i class="fa-solid fa-arrow-right ms-1"></i></button></div>
                         </div>
                     </form>
-                    {% if not current_user.is_authenticated %}
-                    <p class="text-muted-soft small mt-3 mb-0"><i class="fa-solid fa-circle-info"></i> Create a free account to generate and save AI itineraries.</p>
+                    {% else %}
+                    <p class="text-soft">Log in to enter your preferences and let AI build your itinerary — this keeps what you type from getting lost before you generate a plan.</p>
+                    <div class="d-flex gap-3">
+                        <a href="{{ url_for('login') }}" class="btn btn-primary flex-fill">Log In</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-glass flex-fill">Create Account</a>
+                    </div>
                     {% endif %}
                 </div>
             </div>
