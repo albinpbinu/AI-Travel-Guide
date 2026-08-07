@@ -15,7 +15,9 @@ def rank_destinations(profile, duration=5, search_history=None):
     """Hybrid scoring: budget 30%, interest match 30%, distance 15%, weather 10%,
     ratings 10%, travel history 5%. Interest/history are boosted when the traveler's
     mood prompt or recent searches match a destination's category (lightweight
-    content-based personalization)."""
+    content-based personalization). A destination explicitly named in the
+    preference text (e.g. clicking an "alternative destination") is boosted to
+    the top regardless of category, since that's an exact request, not a vibe."""
     dataset = list_destinations()
     budget = _safe_int(profile.get('budget'), 30000)
 
@@ -31,10 +33,14 @@ def rank_destinations(profile, duration=5, search_history=None):
         budget_score = max(0, 1 - abs(item['budget'] - budget) / max(1, budget))
         interest_score = item['interest_match']
         history_score = item['history']
-        matched = item['category'] in matched_categories
-        if matched:
+        category_matched = item['category'] in matched_categories
+        name_matched = item['name'].lower() in signal_text
+        if category_matched:
             interest_score = min(1.0, interest_score + 0.15)
             history_score = min(1.0, history_score + 0.2)
+        if name_matched:
+            interest_score = 1.0
+            history_score = 1.0
         score = (
             0.30 * budget_score +
             0.30 * interest_score +
@@ -43,8 +49,13 @@ def rank_destinations(profile, duration=5, search_history=None):
             0.10 * (item['rating'] / 5) +
             0.05 * history_score
         )
-        results.append({**item, 'score': round(score, 3), 'mood_matched': matched})
-    return sorted(results, key=lambda d: d['score'], reverse=True)
+        results.append({
+            **item, 'score': round(score, 3),
+            'mood_matched': category_matched or name_matched, 'name_matched': name_matched,
+        })
+    # An explicitly named destination is a hard request, not a vibe — it should
+    # always rank first regardless of how other factors like budget compare.
+    return sorted(results, key=lambda d: (not d['name_matched'], -d['score']))
 
 
 def _safe_int(value, default):

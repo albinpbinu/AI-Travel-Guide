@@ -178,6 +178,11 @@ main, .app-nav, .footer { position: relative; z-index: 1; }
     border-radius: 999px; padding: .15rem .6rem; font-weight: 700; font-size: .85rem;
 }
 
+.alt-destination-badge {
+    padding: .4rem .9rem; font-size: .85rem; transition: transform .2s ease, background .2s ease;
+}
+.alt-destination-badge:hover { background: var(--accent) !important; transform: translateY(-2px); }
+
 /* ===== How it works ===== */
 .step-node {
     width: 56px; height: 56px; border-radius: 18px;
