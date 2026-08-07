@@ -10,18 +10,18 @@ from services.gemini_service import build_ai_plan, chat_reply
 from services.weather_service import get_weather_snapshot
 from services.pdf_service import build_itinerary_pdf
 from services.nearby_service import get_nearby_essentials
-from services.content import TESTIMONIALS, HOW_IT_WORKS, get_admin_context
+from services.content import TESTIMONIALS, HOW_IT_WORKS
 from utils.uploads import save_upload
 from database.db import (
     init_db, create_user, get_user_by_email, get_user_by_id,
-    update_user_profile, update_user_password, list_users, delete_user,
+    update_user_profile, update_user_password,
     create_password_reset, get_password_reset, consume_password_reset,
-    list_destinations, get_destination, create_destination, update_destination, delete_destination,
+    list_destinations, get_destination,
     toggle_favorite, list_favorites, is_favorite,
-    list_hotels, list_restaurants, create_hotel, delete_hotel, create_restaurant, delete_restaurant,
+    list_hotels, list_restaurants,
     add_review, list_reviews, toggle_review_like,
     create_trip, list_trips, get_trip, delete_trip,
-    log_search, recent_searches, admin_stats,
+    log_search, recent_searches,
 )
 from config import Config
 
@@ -365,97 +365,6 @@ def search():
         log_search(int(current_user.id), filters['q'])
     results = list_destinations({k: v for k, v in filters.items() if v})
     return render_template('search.html', results=results, filters=filters)
-
-
-@app.route('/admin')
-def admin_dashboard():
-    return render_template('admin.html', ctx=get_admin_context(admin_stats()), destinations=list_destinations())
-
-
-@app.route('/admin/users')
-def admin_users():
-    return render_template('admin_users.html', users=list_users())
-
-
-@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
-def admin_delete_user(user_id):
-    delete_user(user_id)
-    flash('User deleted.', 'success')
-    return redirect(url_for('admin_users'))
-
-
-@app.route('/admin/destinations/new', methods=['GET', 'POST'])
-def admin_new_destination():
-    if request.method == 'POST':
-        payload = _destination_form_payload(request.form)
-        create_destination(payload)
-        flash('Destination added.', 'success')
-        return redirect(url_for('admin_dashboard'))
-    return render_template('admin_destination_form.html', destination=None)
-
-
-@app.route('/admin/destinations/<int:destination_id>/edit', methods=['GET', 'POST'])
-def admin_edit_destination(destination_id):
-    destination = get_destination(destination_id)
-    if not destination:
-        abort(404)
-    if request.method == 'POST':
-        payload = _destination_form_payload(request.form)
-        update_destination(destination_id, payload)
-        flash('Destination updated.', 'success')
-        return redirect(url_for('admin_dashboard'))
-    return render_template(
-        'admin_destination_form.html', destination=destination,
-        hotels=list_hotels(destination_id), restaurants=list_restaurants(destination_id),
-    )
-
-
-@app.route('/admin/destinations/<int:destination_id>/delete', methods=['POST'])
-def admin_delete_destination(destination_id):
-    delete_destination(destination_id)
-    flash('Destination deleted.', 'success')
-    return redirect(url_for('admin_dashboard'))
-
-
-@app.route('/admin/destinations/<int:destination_id>/hotels', methods=['POST'])
-def admin_add_hotel(destination_id):
-    create_hotel(destination_id, request.form.get('name', '').strip(), request.form.get('category', 'Budget'),
-                 int(request.form.get('price') or 0), 4.5)
-    return redirect(url_for('admin_edit_destination', destination_id=destination_id))
-
-
-@app.route('/admin/hotels/<int:hotel_id>/delete', methods=['POST'])
-def admin_delete_hotel(hotel_id):
-    delete_hotel(hotel_id)
-    return redirect(request.referrer or url_for('admin_dashboard'))
-
-
-@app.route('/admin/destinations/<int:destination_id>/restaurants', methods=['POST'])
-def admin_add_restaurant(destination_id):
-    create_restaurant(destination_id, request.form.get('name', '').strip(), request.form.get('cuisine', '').strip(),
-                       request.form.get('price_range', 'Mid'), 4.5)
-    return redirect(url_for('admin_edit_destination', destination_id=destination_id))
-
-
-@app.route('/admin/restaurants/<int:restaurant_id>/delete', methods=['POST'])
-def admin_delete_restaurant(restaurant_id):
-    delete_restaurant(restaurant_id)
-    return redirect(request.referrer or url_for('admin_dashboard'))
-
-
-def _destination_form_payload(form):
-    return {
-        'name': form.get('name', '').strip(),
-        'state': form.get('state', '').strip(),
-        'category': form.get('category', '').strip(),
-        'budget': int(form.get('budget') or 0),
-        'rating': float(form.get('rating') or 4.5),
-        'weather_text': form.get('weather_text', 'Pleasant'),
-        'image': form.get('image', '').strip(),
-        'description': form.get('description', '').strip(),
-        'lat': float(form['lat']) if form.get('lat') else None,
-        'lng': float(form['lng']) if form.get('lng') else None,
-    }
 
 
 if __name__ == '__main__':

@@ -23,25 +23,3 @@ HOW_IT_WORKS = [
     {'icon': 'fa-file-arrow-down', 'title': 'Download or save', 'text': 'Export as PDF, save to your dashboard, or share with travel companions.'},
 ]
 
-
-def get_admin_context(stats):
-    popular = stats.get('popular') or []
-    popular_labels = [p['destination_name'] for p in popular] or ['Munnar', 'Goa', 'Jaipur', 'Manali', 'Alleppey']
-    popular_values = [p['c'] for p in popular] or [0, 0, 0, 0, 0]
-    return {
-        'stat_cards': [
-            {'label': 'Registered Users', 'value': stats['users'], 'icon': 'fa-users', 'delta': ''},
-            {'label': 'Trips Generated', 'value': stats['trips'], 'icon': 'fa-route', 'delta': ''},
-            {'label': 'Avg Trip Budget (₹)', 'value': stats['avg_budget'], 'icon': 'fa-wallet', 'delta': ''},
-            {'label': 'Active Destinations', 'value': stats['destinations'], 'icon': 'fa-map-location-dot', 'delta': ''},
-        ],
-        'user_growth': {
-            'labels': ['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'],
-            'values': [max(0, stats['users'] - 5), max(0, stats['users'] - 4), max(0, stats['users'] - 3),
-                       max(0, stats['users'] - 2), max(0, stats['users'] - 1), stats['users']],
-        },
-        'popular_destinations': {
-            'labels': popular_labels,
-            'values': popular_values,
-        },
-    }
