@@ -45,7 +45,7 @@ SEED_DESTINATIONS = [
         'name': 'Munnar', 'state': 'Kerala', 'category': 'Hill Station',
         'budget': 28000, 'interest_match': 0.92, 'distance': 0.85, 'weather': 0.81,
         'rating': 4.8, 'history': 0.9, 'lat': 10.0889, 'lng': 77.0595,
-        'weather_text': 'Pleasant', 'image': 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
+        'weather_text': 'Pleasant', 'image': 'https://images.unsplash.com/photo-1646818978594-880ef94bde44?auto=format&fit=crop&w=1200&q=80',
         'description': 'Rolling tea plantations, misty hills, and a cool climate year-round.',
         'nearby_attractions': ['Eravikulam National Park', 'Mattupetty Dam', 'Tea Museum'],
         'hotels': [
@@ -113,7 +113,7 @@ SEED_DESTINATIONS = [
         'name': 'Alleppey', 'state': 'Kerala', 'category': 'Nature',
         'budget': 24000, 'interest_match': 0.88, 'distance': 0.9, 'weather': 0.83,
         'rating': 4.7, 'history': 0.5, 'lat': 9.4981, 'lng': 76.3388,
-        'weather_text': 'Humid', 'image': 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
+        'weather_text': 'Humid', 'image': 'https://images.unsplash.com/photo-1593693411515-c20261bcad6e?auto=format&fit=crop&w=1200&q=80',
         'description': 'Tranquil backwaters, houseboats, and coconut-lined canals.',
         'nearby_attractions': ['Alleppey Backwaters', 'Marari Beach', 'Krishnapuram Palace'],
         'hotels': [
@@ -126,16 +126,86 @@ SEED_DESTINATIONS = [
             {'name': 'Harbour Restaurant', 'cuisine': 'Kerala', 'price_range': 'Budget', 'rating': 4.2},
         ],
     },
+    {
+        'name': 'Varanasi', 'state': 'Uttar Pradesh', 'category': 'Religious',
+        'budget': 20000, 'interest_match': 0.85, 'distance': 0.6, 'weather': 0.65,
+        'rating': 4.6, 'history': 0.6, 'lat': 25.3176, 'lng': 82.9739,
+        'weather_text': 'Warm', 'image': 'https://images.unsplash.com/photo-1762513839526-c596f5e99a9a?auto=format&fit=crop&w=1200&q=80',
+        'description': 'Ancient spiritual capital on the Ganges — sunrise boat rides, evening aarti ceremonies, and centuries of living tradition.',
+        'nearby_attractions': ['Dashashwamedh Ghat', 'Kashi Vishwanath Temple', 'Sarnath'],
+        'hotels': [
+            {'name': 'BrijRama Palace', 'category': 'Luxury', 'price': 11000, 'rating': 4.7},
+            {'name': 'Ganges View Hotel', 'category': 'Budget', 'price': 2500, 'rating': 4.4},
+            {'name': 'Zostel Varanasi', 'category': 'Hostel', 'price': 700, 'rating': 4.2},
+        ],
+        'restaurants': [
+            {'name': 'Kashi Chaat Bhandar', 'cuisine': 'Street Food', 'price_range': 'Budget', 'rating': 4.5},
+            {'name': 'Brown Bread Bakery', 'cuisine': 'Multi-cuisine', 'price_range': 'Mid', 'rating': 4.3},
+        ],
+    },
+    {
+        'name': 'Rishikesh', 'state': 'Uttarakhand', 'category': 'Adventure',
+        'budget': 18000, 'interest_match': 0.88, 'distance': 0.65, 'weather': 0.75,
+        'rating': 4.7, 'history': 0.5, 'lat': 30.0869, 'lng': 78.2676,
+        'weather_text': 'Pleasant', 'image': 'https://images.unsplash.com/photo-1718431108073-7f61fb5dfefb?auto=format&fit=crop&w=1200&q=80',
+        'description': 'Yoga capital of the world and gateway to Himalayan adventure — white-water rafting, bungee jumping, and riverside ashrams.',
+        'nearby_attractions': ['Laxman Jhula', 'Triveni Ghat', 'Beatles Ashram'],
+        'hotels': [
+            {'name': 'Ananda in the Himalayas', 'category': 'Luxury', 'price': 13500, 'rating': 4.8},
+            {'name': 'Divine Ganga Cottage', 'category': 'Resort', 'price': 3200, 'rating': 4.4},
+            {'name': 'Zostel Rishikesh', 'category': 'Hostel', 'price': 750, 'rating': 4.3},
+        ],
+        'restaurants': [
+            {'name': 'Chotiwala', 'cuisine': 'North Indian', 'price_range': 'Budget', 'rating': 4.3},
+            {'name': 'Ganga Beach Cafe', 'cuisine': 'Multi-cuisine', 'price_range': 'Mid', 'rating': 4.5},
+        ],
+    },
+    {
+        'name': 'Ranthambore', 'state': 'Rajasthan', 'category': 'Wildlife',
+        'budget': 30000, 'interest_match': 0.83, 'distance': 0.55, 'weather': 0.6,
+        'rating': 4.6, 'history': 0.4, 'lat': 26.0173, 'lng': 76.5026,
+        'weather_text': 'Warm', 'image': 'https://images.unsplash.com/photo-1700562554203-5b8644512759?auto=format&fit=crop&w=1200&q=80',
+        'description': "One of India's premier tiger reserves — thrilling jeep safaris through dry deciduous forest and ancient ruins.",
+        'nearby_attractions': ['Ranthambore Fort', 'Padam Talao', 'Trinetra Ganesh Temple'],
+        'hotels': [
+            {'name': 'Sher Bagh', 'category': 'Luxury', 'price': 16000, 'rating': 4.8},
+            {'name': 'Tiger Den Resort', 'category': 'Resort', 'price': 4500, 'rating': 4.3},
+            {'name': 'RTDC Vinayak', 'category': 'Budget', 'price': 1800, 'rating': 4.0},
+        ],
+        'restaurants': [
+            {'name': "Dev Vilas", 'cuisine': 'Rajasthani', 'price_range': 'Mid', 'rating': 4.3},
+            {'name': "Deo's Kitchen", 'cuisine': 'Multi-cuisine', 'price_range': 'Mid', 'rating': 4.2},
+        ],
+    },
+    {
+        'name': 'Havelock Island', 'state': 'Andaman and Nicobar Islands', 'category': 'Beach',
+        'budget': 45000, 'interest_match': 0.90, 'distance': 0.5, 'weather': 0.85,
+        'rating': 4.8, 'history': 0.3, 'lat': 12.0067, 'lng': 92.9875,
+        'weather_text': 'Sunny', 'image': 'https://images.unsplash.com/photo-1672231862286-bdf67abb806c?auto=format&fit=crop&w=1200&q=80',
+        'description': 'Pristine white-sand beaches and turquoise waters — Radhanagar Beach, world-class diving, and total island calm.',
+        'nearby_attractions': ['Radhanagar Beach', 'Elephant Beach', 'Kalapathar Beach'],
+        'hotels': [
+            {'name': 'Taj Exotica Andamans', 'category': 'Luxury', 'price': 18000, 'rating': 4.8},
+            {'name': 'Barefoot at Havelock', 'category': 'Resort', 'price': 7500, 'rating': 4.6},
+            {'name': 'Wild Orchid', 'category': 'Budget', 'price': 2800, 'rating': 4.2},
+        ],
+        'restaurants': [
+            {'name': 'Full Moon Cafe', 'cuisine': 'Seafood', 'price_range': 'Mid', 'rating': 4.5},
+            {'name': 'Anju Coco Resort Restaurant', 'cuisine': 'Multi-cuisine', 'price_range': 'Budget', 'rating': 4.2},
+        ],
+    },
 ]
 
 MOOD_KEYWORDS = {
     'peaceful': 'Nature', 'relax': 'Nature', 'calm': 'Nature', 'quiet': 'Nature',
-    'adventure': 'Adventure', 'thrill': 'Adventure', 'trek': 'Adventure',
-    'beach': 'Beach', 'sea': 'Beach', 'coast': 'Beach',
+    'adventure': 'Adventure', 'thrill': 'Adventure', 'trek': 'Adventure', 'rafting': 'Adventure',
+    'beach': 'Beach', 'sea': 'Beach', 'coast': 'Beach', 'island': 'Beach', 'diving': 'Beach',
     'mountain': 'Hill Station', 'hill': 'Hill Station', 'snow': 'Hill Station',
     'history': 'Historical', 'heritage': 'Historical', 'culture': 'Historical', 'fort': 'Historical',
     'food': 'Food', 'cuisine': 'Food',
-    'wildlife': 'Wildlife', 'nature': 'Nature',
+    'wildlife': 'Wildlife', 'nature': 'Nature', 'safari': 'Wildlife', 'tiger': 'Wildlife',
+    'religious': 'Religious', 'spiritual': 'Religious', 'temple': 'Religious', 'pilgrimage': 'Religious',
+    'yoga': 'Adventure', 'ganges': 'Religious',
 }
 
 
