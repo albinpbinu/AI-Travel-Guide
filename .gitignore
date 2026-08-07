@@ -4,3 +4,6 @@ __pycache__/
 .env
 .vercel/
 vercel recovery codes/
+
+# Separate, independent project — not part of the AI Travel Guide repo
+portfolio albin/
