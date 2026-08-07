@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4 mb-2">
+        <div class="col-lg-8" data-aos="fade-up">
+            <div class="glass-card p-4 h-100">
+                <h4 class="text-white mb-1">Welcome back, {{ current_user.name.split(' ')[0] }} <i class="fa-solid fa-hand-sparkles text-gradient"></i></h4>
+                <p class="text-soft mb-3">Your AI-powered trip insights are ready.</p>
+                <a href="{{ url_for('plan_form') }}" class="btn btn-primary rounded-pill px-4"><i class="fa-solid fa-plus"></i> Plan a new trip</a>
+            </div>
+        </div>
+        <div class="col-lg-4" data-aos="fade-up" data-aos-delay="80">
+            <div class="glass-card p-4 h-100">
+                <h6 class="text-white mb-3"><i class="fa-solid {{ weather.icon }} text-gradient"></i> Weather — {{ weather.city }}</h6>
+                <div class="d-flex align-items-end gap-2">
+                    <span class="stat-number">{{ weather.temperature }}&deg;</span>
+                    <span class="text-soft mb-1">{{ weather.forecast }}</span>
+                </div>
+                <p class="text-muted-soft small mb-0 mt-2">Humidity {{ weather.humidity }}% {% if weather.rain_alert %}· <span class="text-warning">Rain alert</span>{% endif %}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-2">
+        <div class="col-6 col-md-4" data-aos="fade-up">
+            <div class="stat-tile"><div class="stat-number"><span data-counter="{{ ctx.stats.trips_planned }}">0</span></div><div class="stat-label">Trips Planned</div></div>
+        </div>
+        <div class="col-6 col-md-4" data-aos="fade-up" data-aos-delay="80">
+            <div class="stat-tile"><div class="stat-number"><span data-counter="{{ ctx.stats.destinations_explored }}">0</span></div><div class="stat-label">Destinations</div></div>
+        </div>
+        <div class="col-6 col-md-4" data-aos="fade-up" data-aos-delay="160">
+            <div class="stat-tile"><div class="stat-number">₹<span data-counter="{{ ctx.stats.avg_budget }}">0</span></div><div class="stat-label">Avg Budget</div></div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6" data-aos="fade-up">
+            <div class="glass-card p-4 h-100">
+                <h6 class="text-white mb-3"><i class="fa-solid fa-bookmark text-gradient"></i> Saved Trips</h6>
+                {% for trip in ctx.saved_trips %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--border) !important;">
+                    <div>
+                        <p class="text-white mb-0">{{ trip.title }}</p>
+                        <p class="text-muted-soft small mb-0">
+                            {{ trip.duration_days or '?' }} day(s){% if trip.budget %} · ₹{{ '{:,}'.format(trip.budget) }}{% endif %}
+                            {% if trip.travel_date %} · {{ trip.travel_date }}{% if trip.return_date %} to {{ trip.return_date }}{% endif %}{% endif %}
+                        </p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('trip_pdf', trip_id=trip.id) }}" class="btn btn-sm btn-glass" title="Download PDF"><i class="fa-solid fa-file-arrow-down"></i></a>
+                        <form action="{{ url_for('delete_trip_route', trip_id=trip.id) }}" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-glass text-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if not ctx.saved_trips %}<p class="text-muted-soft small mb-0">No saved trips yet — plan a trip and save it here.</p>{% endif %}
+            </div>
+        </div>
+        <div class="col-lg-6" data-aos="fade-up" data-aos-delay="80">
+            <div class="glass-card p-4 h-100">
+                <h6 class="text-white mb-3"><i class="fa-solid fa-plane-departure text-gradient"></i> Upcoming Trips</h6>
+                {% for trip in ctx.upcoming_trips %}
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color: var(--border) !important;">
+                    <div>
+                        <p class="text-white mb-0">{{ trip.title }}</p>
+                        <p class="text-muted-soft small mb-0">{{ trip.travel_date }}</p>
+                    </div>
+                    <span class="badge rounded-pill text-bg-primary">{{ trip.days_left }} days left</span>
+                </div>
+                {% endfor %}
+                {% if not ctx.upcoming_trips %}<p class="text-muted-soft small mb-0">No upcoming trips with a travel date yet.</p>{% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-6" data-aos="fade-up">
+            <div class="glass-card p-4 h-100">
+                <h6 class="text-white mb-3"><i class="fa-solid fa-heart text-gradient"></i> Favorite Destinations</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for fav in ctx.favorites %}
+                    <a href="{{ url_for('destination_detail', destination_id=fav.id) }}" class="badge rounded-pill text-bg-secondary py-2 px-3 text-decoration-none">{{ fav.name }}</a>
+                    {% endfor %}
+                </div>
+                {% if not ctx.favorites %}<p class="text-muted-soft small mb-0">No favorites yet — heart a destination to save it here.</p>{% endif %}
+            </div>
+        </div>
+        <div class="col-lg-6" data-aos="fade-up" data-aos-delay="80">
+            <div class="glass-card p-4 h-100">
+                <h6 class="text-white mb-3"><i class="fa-solid fa-star text-gradient"></i> Top AI Recommendation</h6>
+                <p class="text-white mb-1"><a href="{{ url_for('destination_detail', destination_id=recommendation[0].id) }}" class="text-white text-decoration-none">{{ recommendation[0].name }}, {{ recommendation[0].state }}</a></p>
+                <p class="text-muted-soft small mb-0">Match score {{ (recommendation[0].score * 100) | round(1) }}% · ₹{{ '{:,}'.format(recommendation[0].budget) }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5" data-aos="fade-up">
+        <span class="hero-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Trip Planner</span>
+        <h2 class="section-title mt-3">Tell us about your trip</h2>
+        <p class="section-sub">The more details you share, the better your AI itinerary fits.</p>
+    </div>
+
+    <form action="{{ url_for('plan_trip') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="glass-card form-shell mb-4" data-aos="fade-up">
+                    <div class="form-section-title"><i class="fa-solid fa-location-dot"></i> Trip basics</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Destination preference</label>
+                            <input class="form-control" name="destination_preference" placeholder="e.g. Hill station, beach, city">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Starting location</label>
+                            <input class="form-control" name="starting_location" placeholder="e.g. Bengaluru">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Budget (₹)</label>
+                            <input class="form-control" name="budget" type="number" placeholder="30000">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Trip duration (days)</label>
+                            <input class="form-control" name="duration" type="number" min="1" max="7" placeholder="5">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Travel date</label>
+                            <input class="form-control" name="travel_date" type="date">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Number of travelers</label>
+                            <input class="form-control" name="travelers" type="number" min="1" value="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Travel type</label>
+                            <select class="form-select" name="travel_type">
+                                <option>Solo</option><option>Couple</option><option>Family</option><option>Friends</option><option>Business</option><option>Honeymoon</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card form-shell mb-4" data-aos="fade-up">
+                    <div class="form-section-title"><i class="fa-solid fa-car-side"></i> Transport &amp; stay</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Transportation mode</label>
+                            <select class="form-select" name="transportation">
+                                <option>Car</option><option>Bike</option><option>Bus</option><option>Train</option><option>Flight</option><option>Walking</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Accommodation preference</label>
+                            <select class="form-select" name="accommodation">
+                                <option>Budget</option><option>Luxury</option><option>Hostel</option><option>Resort</option><option>Camping</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Food preference</label>
+                            <select class="form-select" name="food_preference">
+                                <option>Vegetarian</option><option>Non-Vegetarian</option><option>Vegan</option><option>Halal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Adventure level</label>
+                            <select class="form-select" name="adventure_level">
+                                <option>Low</option><option selected>Medium</option><option>High</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card form-shell mb-4" data-aos="fade-up">
+                    <div class="form-section-title"><i class="fa-solid fa-sliders"></i> Preferences</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Preferred pace</label>
+                            <select class="form-select" name="pace">
+                                <option>Relaxed</option><option>Balanced</option><option>Packed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Languages</label>
+                            <input class="form-control" name="languages" placeholder="e.g. English, Hindi">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Accessibility requirements</label>
+                            <input class="form-control" name="accessibility" placeholder="e.g. Wheelchair access">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Interests</label>
+                            <input class="form-control" name="interests" placeholder="e.g. Nature, food, history">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Special requests</label>
+                            <textarea class="form-control" name="special_requests" rows="3" placeholder="Anything else the AI should consider"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="glass-card form-shell position-sticky" style="top: 90px;" data-aos="fade-up">
+                    <div class="form-section-title"><i class="fa-solid fa-face-smile"></i> Travel mood</div>
+                    <p class="text-soft small">Describe your ideal trip in a sentence — the AI will infer the mood.</p>
+                    <textarea class="form-control mb-3" name="mood_prompt" rows="3" placeholder="e.g. I need a peaceful vacation with nature and slow mornings"></textarea>
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <span class="badge rounded-pill text-bg-secondary">Nature</span>
+                        <span class="badge rounded-pill text-bg-secondary">Relaxation</span>
+                        <span class="badge rounded-pill text-bg-secondary">Adventure</span>
+                        <span class="badge rounded-pill text-bg-secondary">Luxury</span>
+                        <span class="badge rounded-pill text-bg-secondary">Food tourism</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate AI Itinerary
+                    </button>
+                    <p class="text-muted-soft small mt-3 mb-0"><i class="fa-solid fa-circle-info"></i> Recommendations use a hybrid engine: budget 30%, interests 30%, distance 15%, weather 10%, ratings 10%, history 5%.</p>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

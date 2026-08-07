@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7" data-aos="fade-up">
+            <div class="glass-card form-shell mb-4">
+                <h3 class="text-white mb-4">Edit Profile</h3>
+                <form method="post" enctype="multipart/form-data" action="{{ url_for('profile') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture }}" class="testimonial-avatar" style="width:64px;height:64px;" alt="Profile picture">
+                        {% else %}
+                        <i class="fa-solid fa-circle-user" style="font-size: 3.5rem; color: var(--text-2);"></i>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <label class="form-label">Profile picture</label>
+                            <input type="file" class="form-control" name="profile_picture" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Full name</label>
+                            <input class="form-control" name="name" value="{{ user.name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input class="form-control" value="{{ user.email }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone</label>
+                            <input class="form-control" name="phone" value="{{ user.phone or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Country</label>
+                            <input class="form-control" name="country" value="{{ user.country or '' }}">
+                        </div>
+                        <div class="col-12"><button class="btn btn-primary rounded-pill px-4">Save Changes</button></div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="glass-card form-shell">
+                <h4 class="text-white mb-4">Change Password</h4>
+                <form method="post" action="{{ url_for('change_password') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Current password</label>
+                            <input type="password" class="form-control" name="current_password" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">New password</label>
+                            <input type="password" class="form-control pw-input" name="new_password" required>
+                            <div class="password-meter"><span></span></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Confirm new password</label>
+                            <input type="password" class="form-control" name="confirm_password" required>
+                        </div>
+                        <div class="col-12"><button class="btn btn-glass rounded-pill px-4">Update Password</button></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

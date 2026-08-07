@@ -1,0 +1,13 @@
+Flask==3.0.3
+Flask-Login==0.6.3
+python-dotenv==1.0.1
+requests==2.32.2
+gunicorn==22.0.0
+Werkzeug==3.0.3
+pytest==8.3.2
+google-generativeai==0.8.3
+reportlab==4.2.5
+qrcode[pil]==7.4.2
+Flask-WTF==1.2.1
+psycopg[binary]==3.3.4
+cloudinary==1.41.0

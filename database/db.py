@@ -1,0 +1,797 @@
+import json
+import secrets
+from datetime import datetime, timedelta, timezone
+
+import psycopg
+from psycopg.rows import dict_row
+
+
+def _resolve_app(app):
+    if app is not None:
+        return app
+    from flask import current_app
+    return current_app._get_current_object()
+
+
+def get_db(app=None):
+    app = _resolve_app(app)
+    conn = psycopg.connect(app.config['DATABASE_URL'], row_factory=dict_row)
+    return conn
+
+
+def now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+SEED_DESTINATIONS = [
+    {
+        'name': 'Munnar', 'state': 'Kerala', 'category': 'Hill Station',
+        'budget': 28000, 'interest_match': 0.92, 'distance': 0.85, 'weather': 0.81,
+        'rating': 4.8, 'history': 0.9, 'lat': 10.0889, 'lng': 77.0595,
+        'weather_text': 'Pleasant', 'image': 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
+        'description': 'Rolling tea plantations, misty hills, and a cool climate year-round.',
+        'nearby_attractions': ['Eravikulam National Park', 'Mattupetty Dam', 'Tea Museum'],
+        'hotels': [
+            {'name': 'Windermere Estate', 'category': 'Luxury', 'price': 9500, 'rating': 4.8},
+            {'name': 'Munnar Tea Valley Resort', 'category': 'Resort', 'price': 5200, 'rating': 4.5},
+            {'name': 'Zostel Munnar', 'category': 'Hostel', 'price': 900, 'rating': 4.3},
+        ],
+        'restaurants': [
+            {'name': 'Saravana Bhavan', 'cuisine': 'South Indian', 'price_range': 'Budget', 'rating': 4.4},
+            {'name': 'Rapsy Restaurant', 'cuisine': 'Kerala', 'price_range': 'Mid', 'rating': 4.6},
+        ],
+    },
+    {
+        'name': 'Goa', 'state': 'Goa', 'category': 'Beach',
+        'budget': 35000, 'interest_match': 0.80, 'distance': 0.78, 'weather': 0.79,
+        'rating': 4.6, 'history': 0.7, 'lat': 15.2993, 'lng': 74.1240,
+        'weather_text': 'Sunny', 'image': 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1200&q=80',
+        'description': 'Golden beaches, Portuguese heritage, and a buzzing nightlife scene.',
+        'nearby_attractions': ['Baga Beach', 'Fort Aguada', 'Basilica of Bom Jesus'],
+        'hotels': [
+            {'name': 'Taj Fort Aguada', 'category': 'Luxury', 'price': 12000, 'rating': 4.7},
+            {'name': 'Baga Beach Resort', 'category': 'Resort', 'price': 4800, 'rating': 4.3},
+            {'name': 'The Hosteller Goa', 'category': 'Hostel', 'price': 700, 'rating': 4.2},
+        ],
+        'restaurants': [
+            {'name': "Fisherman's Wharf", 'cuisine': 'Seafood', 'price_range': 'Mid', 'rating': 4.5},
+            {'name': "Britto's", 'cuisine': 'Goan', 'price_range': 'Mid', 'rating': 4.3},
+        ],
+    },
+    {
+        'name': 'Jaipur', 'state': 'Rajasthan', 'category': 'Historical',
+        'budget': 32000, 'interest_match': 0.76, 'distance': 0.70, 'weather': 0.72,
+        'rating': 4.7, 'history': 0.6, 'lat': 26.9124, 'lng': 75.7873,
+        'weather_text': 'Warm', 'image': 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=1200&q=80',
+        'description': 'The Pink City — majestic forts, palaces, and vibrant bazaars.',
+        'nearby_attractions': ['Amber Fort', 'Hawa Mahal', 'City Palace'],
+        'hotels': [
+            {'name': 'Rambagh Palace', 'category': 'Luxury', 'price': 15000, 'rating': 4.9},
+            {'name': 'Hotel Pearl Palace', 'category': 'Budget', 'price': 2200, 'rating': 4.5},
+            {'name': 'Zostel Jaipur', 'category': 'Hostel', 'price': 850, 'rating': 4.2},
+        ],
+        'restaurants': [
+            {'name': 'Chokhi Dhani', 'cuisine': 'Rajasthani', 'price_range': 'Mid', 'rating': 4.6},
+            {'name': 'Laxmi Misthan Bhandar', 'cuisine': 'North Indian', 'price_range': 'Budget', 'rating': 4.4},
+        ],
+    },
+    {
+        'name': 'Manali', 'state': 'Himachal Pradesh', 'category': 'Adventure',
+        'budget': 26000, 'interest_match': 0.84, 'distance': 0.65, 'weather': 0.6,
+        'rating': 4.6, 'history': 0.55, 'lat': 32.2432, 'lng': 77.1892,
+        'weather_text': 'Cold', 'image': 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1200&q=80',
+        'description': 'Snow-capped peaks, river rafting, and Himalayan adventure sports.',
+        'nearby_attractions': ['Solang Valley', 'Rohtang Pass', 'Hadimba Temple'],
+        'hotels': [
+            {'name': 'The Himalayan', 'category': 'Luxury', 'price': 8500, 'rating': 4.7},
+            {'name': 'Snow Valley Resorts', 'category': 'Resort', 'price': 4200, 'rating': 4.4},
+            {'name': 'Zostel Old Manali', 'category': 'Hostel', 'price': 800, 'rating': 4.3},
+        ],
+        'restaurants': [
+            {'name': 'Cafe 1947', 'cuisine': 'Continental', 'price_range': 'Mid', 'rating': 4.5},
+            {'name': "Johnson's Cafe", 'cuisine': 'Multi-cuisine', 'price_range': 'Mid', 'rating': 4.4},
+        ],
+    },
+    {
+        'name': 'Alleppey', 'state': 'Kerala', 'category': 'Nature',
+        'budget': 24000, 'interest_match': 0.88, 'distance': 0.9, 'weather': 0.83,
+        'rating': 4.7, 'history': 0.5, 'lat': 9.4981, 'lng': 76.3388,
+        'weather_text': 'Humid', 'image': 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
+        'description': 'Tranquil backwaters, houseboats, and coconut-lined canals.',
+        'nearby_attractions': ['Alleppey Backwaters', 'Marari Beach', 'Krishnapuram Palace'],
+        'hotels': [
+            {'name': 'Punnamada Backwater Resort', 'category': 'Resort', 'price': 6200, 'rating': 4.6},
+            {'name': 'Lake Palace Resort', 'category': 'Luxury', 'price': 9800, 'rating': 4.7},
+            {'name': 'Alleppey Backpackers', 'category': 'Hostel', 'price': 750, 'rating': 4.1},
+        ],
+        'restaurants': [
+            {'name': 'Chakara Restaurant', 'cuisine': 'Kerala Seafood', 'price_range': 'Mid', 'rating': 4.5},
+            {'name': 'Harbour Restaurant', 'cuisine': 'Kerala', 'price_range': 'Budget', 'rating': 4.2},
+        ],
+    },
+]
+
+MOOD_KEYWORDS = {
+    'peaceful': 'Nature', 'relax': 'Nature', 'calm': 'Nature', 'quiet': 'Nature',
+    'adventure': 'Adventure', 'thrill': 'Adventure', 'trek': 'Adventure',
+    'beach': 'Beach', 'sea': 'Beach', 'coast': 'Beach',
+    'mountain': 'Hill Station', 'hill': 'Hill Station', 'snow': 'Hill Station',
+    'history': 'Historical', 'heritage': 'Historical', 'culture': 'Historical', 'fort': 'Historical',
+    'food': 'Food', 'cuisine': 'Food',
+    'wildlife': 'Wildlife', 'nature': 'Nature',
+}
+
+
+def init_db(app):
+    conn = get_db(app)
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            phone TEXT,
+            country TEXT,
+            password_hash TEXT NOT NULL,
+            profile_picture TEXT,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS destinations (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            state TEXT,
+            category TEXT,
+            budget INTEGER NOT NULL,
+            interest_match REAL NOT NULL,
+            distance REAL NOT NULL,
+            weather REAL NOT NULL,
+            rating REAL NOT NULL,
+            history REAL NOT NULL,
+            lat REAL, lng REAL,
+            weather_text TEXT,
+            image TEXT,
+            description TEXT,
+            nearby_attractions TEXT,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS hotels (
+            id SERIAL PRIMARY KEY,
+            destination_id INTEGER NOT NULL REFERENCES destinations(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            category TEXT,
+            price_per_night INTEGER,
+            rating REAL,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS restaurants (
+            id SERIAL PRIMARY KEY,
+            destination_id INTEGER NOT NULL REFERENCES destinations(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            cuisine TEXT,
+            price_range TEXT,
+            rating REAL,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS trips (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            title TEXT NOT NULL,
+            destination_name TEXT,
+            budget INTEGER,
+            duration_days INTEGER,
+            travel_date TEXT,
+            return_date TEXT,
+            status TEXT NOT NULL DEFAULT 'saved',
+            data TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS favorites (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            destination_id INTEGER NOT NULL REFERENCES destinations(id) ON DELETE CASCADE,
+            created_at TEXT NOT NULL,
+            UNIQUE(user_id, destination_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS reviews (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            destination_id INTEGER NOT NULL REFERENCES destinations(id) ON DELETE CASCADE,
+            rating INTEGER NOT NULL,
+            comment TEXT,
+            photo_url TEXT,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS review_likes (
+            id SERIAL PRIMARY KEY,
+            review_id INTEGER NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(review_id, user_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS search_history (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            query TEXT,
+            created_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            token TEXT UNIQUE NOT NULL,
+            created_at TEXT NOT NULL,
+            used INTEGER NOT NULL DEFAULT 0
+        );
+    """)
+    conn.commit()
+
+    cur.execute("SELECT 1 FROM users WHERE email = %s", ('demo@travelguide.ai',))
+    if cur.fetchone() is None:
+        from werkzeug.security import generate_password_hash
+        cur.execute(
+            "INSERT INTO users (name, email, phone, country, password_hash, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+            ('Demo User', 'demo@travelguide.ai', '', 'India', generate_password_hash('demo1234'), now())
+        )
+        conn.commit()
+
+    cur.execute("SELECT COUNT(*) AS c FROM destinations")
+    if cur.fetchone()['c'] == 0:
+        for d in SEED_DESTINATIONS:
+            cur.execute(
+                """INSERT INTO destinations
+                   (name, state, category, budget, interest_match, distance, weather, rating, history,
+                    lat, lng, weather_text, image, description, nearby_attractions, created_at)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                (d['name'], d['state'], d['category'], d['budget'], d['interest_match'], d['distance'],
+                 d['weather'], d['rating'], d['history'], d['lat'], d['lng'], d['weather_text'], d['image'],
+                 d['description'], json.dumps(d['nearby_attractions']), now())
+            )
+            destination_id = cur.fetchone()['id']
+            for h in d.get('hotels', []):
+                cur.execute(
+                    "INSERT INTO hotels (destination_id, name, category, price_per_night, rating, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (destination_id, h['name'], h['category'], h['price'], h['rating'], now())
+                )
+            for r in d.get('restaurants', []):
+                cur.execute(
+                    "INSERT INTO restaurants (destination_id, name, cuisine, price_range, rating, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (destination_id, r['name'], r['cuisine'], r['price_range'], r['rating'], now())
+                )
+        conn.commit()
+    cur.close()
+    conn.close()
+
+
+def _destination_row_to_dict(row):
+    if row is None:
+        return None
+    d = dict(row)
+    d['nearby_attractions'] = json.loads(d['nearby_attractions']) if d.get('nearby_attractions') else []
+    return d
+
+
+# ---------- Users ----------
+
+def create_user(app, name, email, phone, country, password_hash):
+    conn = get_db(app)
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO users (name, email, phone, country, password_hash, created_at) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+        (name, email, phone, country, password_hash, now())
+    )
+    user_id = cur.fetchone()['id']
+    conn.commit()
+    cur.close()
+    conn.close()
+    return user_id
+
+
+def get_user_by_email(app, email):
+    conn = get_db(app)
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
+
+
+def get_user_by_id(app, user_id):
+    conn = get_db(app)
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
+
+
+def update_user_profile(user_id, name, phone, country, profile_picture=None):
+    conn = get_db()
+    cur = conn.cursor()
+    if profile_picture:
+        cur.execute(
+            "UPDATE users SET name=%s, phone=%s, country=%s, profile_picture=%s WHERE id=%s",
+            (name, phone, country, profile_picture, user_id)
+        )
+    else:
+        cur.execute(
+            "UPDATE users SET name=%s, phone=%s, country=%s WHERE id=%s",
+            (name, phone, country, user_id)
+        )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def update_user_password(user_id, password_hash):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET password_hash=%s WHERE id=%s", (password_hash, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def list_users():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT u.*, (SELECT COUNT(*) FROM trips t WHERE t.user_id = u.id) AS trip_count
+           FROM users u ORDER BY u.created_at DESC"""
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_user(user_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# ---------- Password reset (dev-mode: no SMTP, token surfaced directly) ----------
+
+def create_password_reset(user_id):
+    conn = get_db()
+    cur = conn.cursor()
+    token = secrets.token_urlsafe(32)
+    cur.execute(
+        "INSERT INTO password_resets (user_id, token, created_at, used) VALUES (%s, %s, %s, 0)",
+        (user_id, token, now())
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return token
+
+
+def get_password_reset(token):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM password_resets WHERE token = %s", (token,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not row:
+        return None
+    row = dict(row)
+    created = datetime.fromisoformat(row['created_at'])
+    if row['used'] or datetime.now(timezone.utc) - created > timedelta(hours=1):
+        return None
+    return row
+
+
+def consume_password_reset(token):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE password_resets SET used = 1 WHERE token = %s", (token,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# ---------- Destinations ----------
+
+def list_destinations(filters=None):
+    conn = get_db()
+    cur = conn.cursor()
+    query = "SELECT * FROM destinations WHERE 1=1"
+    params = []
+    filters = filters or {}
+    if filters.get('state'):
+        query += " AND state = %s"
+        params.append(filters['state'])
+    if filters.get('category'):
+        query += " AND category = %s"
+        params.append(filters['category'])
+    if filters.get('max_budget'):
+        query += " AND budget <= %s"
+        params.append(filters['max_budget'])
+    if filters.get('min_rating'):
+        query += " AND rating >= %s"
+        params.append(filters['min_rating'])
+    if filters.get('q'):
+        query += " AND (name ILIKE %s OR state ILIKE %s OR category ILIKE %s OR description ILIKE %s)"
+        like = f"%{filters['q']}%"
+        params += [like, like, like, like]
+    query += " ORDER BY rating DESC"
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [_destination_row_to_dict(r) for r in rows]
+
+
+def get_destination(destination_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM destinations WHERE id = %s", (destination_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return _destination_row_to_dict(row) if row else None
+
+
+def create_destination(payload):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """INSERT INTO destinations
+           (name, state, category, budget, interest_match, distance, weather, rating, history,
+            lat, lng, weather_text, image, description, nearby_attractions, created_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+        (payload['name'], payload['state'], payload['category'], payload['budget'],
+         payload.get('interest_match', 0.75), payload.get('distance', 0.7), payload.get('weather', 0.7),
+         payload.get('rating', 4.5), payload.get('history', 0.5), payload.get('lat'), payload.get('lng'),
+         payload.get('weather_text', 'Pleasant'), payload.get('image', ''), payload.get('description', ''),
+         json.dumps(payload.get('nearby_attractions', [])), now())
+    )
+    destination_id = cur.fetchone()['id']
+    conn.commit()
+    cur.close()
+    conn.close()
+    return destination_id
+
+
+def update_destination(destination_id, payload):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """UPDATE destinations SET name=%s, state=%s, category=%s, budget=%s, rating=%s, weather_text=%s,
+           image=%s, description=%s WHERE id=%s""",
+        (payload['name'], payload['state'], payload['category'], payload['budget'], payload['rating'],
+         payload.get('weather_text', 'Pleasant'), payload.get('image', ''), payload.get('description', ''),
+         destination_id)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def delete_destination(destination_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM destinations WHERE id = %s", (destination_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def recalc_destination_rating(destination_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT AVG(rating) AS avg_rating FROM reviews WHERE destination_id = %s", (destination_id,))
+    avg = cur.fetchone()
+    if avg and avg['avg_rating'] is not None:
+        cur.execute("UPDATE destinations SET rating = %s WHERE id = %s", (round(float(avg['avg_rating']), 2), destination_id))
+        conn.commit()
+    cur.close()
+    conn.close()
+
+
+# ---------- Hotels & Restaurants ----------
+
+def list_hotels(destination_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM hotels WHERE destination_id = %s ORDER BY rating DESC", (destination_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def list_restaurants(destination_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM restaurants WHERE destination_id = %s ORDER BY rating DESC", (destination_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def create_hotel(destination_id, name, category, price, rating):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO hotels (destination_id, name, category, price_per_night, rating, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+        (destination_id, name, category, price, rating, now())
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def delete_hotel(hotel_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM hotels WHERE id = %s", (hotel_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def create_restaurant(destination_id, name, cuisine, price_range, rating):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO restaurants (destination_id, name, cuisine, price_range, rating, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+        (destination_id, name, cuisine, price_range, rating, now())
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def delete_restaurant(restaurant_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM restaurants WHERE id = %s", (restaurant_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# ---------- Favorites ----------
+
+def toggle_favorite(user_id, destination_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM favorites WHERE user_id = %s AND destination_id = %s", (user_id, destination_id))
+    existing = cur.fetchone()
+    if existing:
+        cur.execute("DELETE FROM favorites WHERE id = %s", (existing['id'],))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return False
+    cur.execute(
+        "INSERT INTO favorites (user_id, destination_id, created_at) VALUES (%s, %s, %s)",
+        (user_id, destination_id, now())
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+
+
+def list_favorites(user_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT d.* FROM favorites f JOIN destinations d ON d.id = f.destination_id
+           WHERE f.user_id = %s ORDER BY f.created_at DESC""",
+        (user_id,)
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [_destination_row_to_dict(r) for r in rows]
+
+
+def is_favorite(user_id, destination_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM favorites WHERE user_id = %s AND destination_id = %s", (user_id, destination_id))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row is not None
+
+
+# ---------- Reviews ----------
+
+def add_review(user_id, destination_id, rating, comment, photo_url=None):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO reviews (user_id, destination_id, rating, comment, photo_url, created_at) VALUES (%s, %s, %s, %s, %s, %s)",
+        (user_id, destination_id, rating, comment, photo_url, now())
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+    recalc_destination_rating(destination_id)
+
+
+def list_reviews(destination_id, current_user_id=None):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT r.*, u.name AS user_name,
+                  (SELECT COUNT(*) FROM review_likes rl WHERE rl.review_id = r.id) AS like_count
+           FROM reviews r JOIN users u ON u.id = r.user_id
+           WHERE r.destination_id = %s ORDER BY r.created_at DESC""",
+        (destination_id,)
+    )
+    reviews = [dict(r) for r in cur.fetchall()]
+    if current_user_id:
+        cur.execute("SELECT review_id FROM review_likes WHERE user_id = %s", (current_user_id,))
+        liked_ids = {row['review_id'] for row in cur.fetchall()}
+        for r in reviews:
+            r['liked_by_me'] = r['id'] in liked_ids
+    cur.close()
+    conn.close()
+    return reviews
+
+
+def toggle_review_like(review_id, user_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM review_likes WHERE review_id = %s AND user_id = %s", (review_id, user_id))
+    existing = cur.fetchone()
+    if existing:
+        cur.execute("DELETE FROM review_likes WHERE id = %s", (existing['id'],))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return False
+    cur.execute("INSERT INTO review_likes (review_id, user_id) VALUES (%s, %s)", (review_id, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+
+
+# ---------- Trips ----------
+
+def create_trip(user_id, itinerary_payload):
+    form_data = itinerary_payload.get('form_data', {})
+    ranked = itinerary_payload.get('ranked', [])
+    top = ranked[0] if ranked else {}
+    title = f"{top.get('name', 'Trip')} — {form_data.get('travel_type', 'Custom')}"
+
+    return_date = None
+    travel_date = form_data.get('travel_date')
+    duration = form_data.get('duration')
+    if travel_date and duration:
+        try:
+            return_date = (datetime.strptime(travel_date, '%Y-%m-%d') + timedelta(days=int(duration))).strftime('%Y-%m-%d')
+        except ValueError:
+            return_date = None
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        """INSERT INTO trips (user_id, title, destination_name, budget, duration_days, travel_date,
+           return_date, status, data, created_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+        (user_id, title, top.get('name'), form_data.get('budget'), duration,
+         travel_date, return_date, 'saved',
+         json.dumps(itinerary_payload), now())
+    )
+    trip_id = cur.fetchone()['id']
+    conn.commit()
+    cur.close()
+    conn.close()
+    return trip_id
+
+
+def list_trips(user_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM trips WHERE user_id = %s ORDER BY created_at DESC", (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    trips = []
+    for r in rows:
+        trip = dict(r)
+        trip['data'] = json.loads(trip['data'])
+        trips.append(trip)
+    return trips
+
+
+def get_trip(trip_id, user_id=None):
+    conn = get_db()
+    cur = conn.cursor()
+    if user_id is not None:
+        cur.execute("SELECT * FROM trips WHERE id = %s AND user_id = %s", (trip_id, user_id))
+    else:
+        cur.execute("SELECT * FROM trips WHERE id = %s", (trip_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not row:
+        return None
+    trip = dict(row)
+    trip['data'] = json.loads(trip['data'])
+    return trip
+
+
+def delete_trip(trip_id, user_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM trips WHERE id = %s AND user_id = %s", (trip_id, user_id))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# ---------- Search history ----------
+
+def log_search(user_id, query):
+    if not query:
+        return
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO search_history (user_id, query, created_at) VALUES (%s, %s, %s)",
+        (user_id, query, now())
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def recent_searches(user_id, limit=5):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT query, created_at FROM search_history WHERE user_id = %s ORDER BY created_at DESC LIMIT %s",
+        (user_id, limit)
+    )
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# ---------- Admin stats ----------
+
+def admin_stats():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) AS c FROM users")
+    users = cur.fetchone()['c']
+    cur.execute("SELECT COUNT(*) AS c FROM trips")
+    trips = cur.fetchone()['c']
+    cur.execute("SELECT COUNT(*) AS c FROM destinations")
+    destinations = cur.fetchone()['c']
+    cur.execute("SELECT AVG(budget) AS avg_budget FROM trips WHERE budget IS NOT NULL")
+    avg_budget_row = cur.fetchone()
+    avg_budget = round(avg_budget_row['avg_budget']) if avg_budget_row['avg_budget'] else 0
+    cur.execute(
+        """SELECT destination_name, COUNT(*) AS c FROM trips WHERE destination_name IS NOT NULL
+           GROUP BY destination_name ORDER BY c DESC LIMIT 5"""
+    )
+    popular = cur.fetchall()
+    cur.close()
+    conn.close()
+    return {
+        'users': users, 'trips': trips, 'destinations': destinations, 'avg_budget': avg_budget,
+        'popular': [dict(p) for p in popular],
+    }
