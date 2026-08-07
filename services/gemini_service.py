@@ -5,9 +5,6 @@ import sys
 from database.db import list_hotels, list_restaurants
 from services.recommendation import build_budget_breakdown, build_packing_list
 
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
-
 PROMPT_TEMPLATE = """You are a travel planning assistant. You must only use the destination data
 provided below as grounding. Never invent facts, hotels, or attractions that are not present
 in the data. If something cannot be determined from the data, use the exact string
@@ -48,11 +45,11 @@ def _fallback_narrative(form_data, ranked):
     }
 
 
-def _gemini_narrative(form_data, ranked):
+def _gemini_narrative(form_data, ranked, api_key, model_name):
     import google.generativeai as genai
 
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel(GEMINI_MODEL)
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(model_name)
 
     dataset = [
         {k: d[k] for k in ('name', 'state', 'category', 'budget', 'rating', 'weather_text', 'nearby_attractions', 'score')}
@@ -90,10 +87,13 @@ def build_ai_plan(form_data, ranked):
             'source': 'unavailable',
         }
 
+    api_key = os.getenv('GEMINI_API_KEY', '')
+    model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
+
     source = 'fallback'
-    if GEMINI_API_KEY:
+    if api_key:
         try:
-            narrative = _gemini_narrative(form_data, ranked)
+            narrative = _gemini_narrative(form_data, ranked, api_key, model_name)
             source = 'gemini'
         except Exception as exc:
             print(f"[gemini_service] Falling back to local narrative: {exc}", file=sys.stderr)

@@ -2,7 +2,6 @@ import os
 
 import requests
 
-WEATHER_API_KEY = os.getenv('WEATHER_API_KEY', '')
 OPENWEATHER_URL = 'https://api.openweathermap.org/data/2.5/weather'
 
 
@@ -19,13 +18,14 @@ def _fallback_snapshot(city):
 
 
 def get_weather_snapshot(city):
-    if not WEATHER_API_KEY:
+    api_key = os.getenv('WEATHER_API_KEY', '')
+    if not api_key:
         return _fallback_snapshot(city)
 
     try:
         response = requests.get(
             OPENWEATHER_URL,
-            params={'q': city, 'appid': WEATHER_API_KEY, 'units': 'metric'},
+            params={'q': city, 'appid': api_key, 'units': 'metric'},
             timeout=5,
         )
         response.raise_for_status()
