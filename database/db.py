@@ -316,6 +316,16 @@ def init_db(app):
                     created_at TEXT NOT NULL,
                     used INTEGER NOT NULL DEFAULT 0
                 );
+
+                -- Holds the plan a user just generated, until they save it or
+                -- export a PDF. Too big for the session cookie, and serverless
+                -- containers have no disk to park it on.
+                CREATE TABLE IF NOT EXISTS itinerary_stash (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    data TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
             """)
 
             cur.execute("SELECT 1 FROM users WHERE email = %s", ('demo@travelguide.ai',))
@@ -664,6 +674,32 @@ def toggle_review_like(review_id, user_id):
 
 
 # ---------- Trips ----------
+
+def stash_itinerary(user_id, payload):
+    """Persist a freshly generated plan and return its id. Only the most recent
+    one per user is kept — older rows are disposable once superseded."""
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO itinerary_stash (user_id, data, created_at) VALUES (%s, %s, %s) RETURNING id",
+                (user_id, json.dumps(payload), now())
+            )
+            stash_id = cur.fetchone()['id']
+            cur.execute(
+                "DELETE FROM itinerary_stash WHERE user_id = %s AND id <> %s", (user_id, stash_id)
+            )
+            return stash_id
+
+
+def load_itinerary(stash_id, user_id):
+    with get_db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT data FROM itinerary_stash WHERE id = %s AND user_id = %s", (stash_id, user_id)
+            )
+            row = cur.fetchone()
+    return json.loads(row['data']) if row else None
+
 
 def create_trip(user_id, itinerary_payload):
     form_data = itinerary_payload.get('form_data', {})

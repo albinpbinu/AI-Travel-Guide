@@ -61,7 +61,7 @@ Demo login: `demo@travelguide.ai` / `demo1234`
    - `SECRET_KEY` (generate a random string — don't reuse the local dev one)
    - `DATABASE_URL` (your Neon connection string)
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
-   - `GEMINI_API_KEY`, `WEATHER_API_KEY` (optional)
+   - `GEMINI_API_KEY`, `WEATHER_API_KEY`, `GEMINI_MODEL` (optional)
 4. Deploy. Vercel auto-detects `vercel.json` (`builds`/`routes` targeting `api/index.py`) and builds it as a Python serverless function.
 
 That's it — no Docker, no server to manage, and nothing here requires a paid tier for
@@ -81,8 +81,18 @@ built-in destination dataset (no API key needed). With `GEMINI_API_KEY` set:
 2. The itinerary page shows a "Gemini AI" badge instead of "Local recommendation engine"
 3. The chatbot widget answers with real Gemini responses instead of canned replies
 
-If the Gemini call fails for any reason (no key, bad response, rate limit), the app
-automatically falls back to the local engine — itinerary generation never breaks.
+If the Gemini call fails for any reason (no key, bad response, rate limit, timeout), the
+app automatically falls back to the local engine — itinerary generation never breaks.
+
+### Choosing a model
+`GEMINI_MODEL` defaults to `gemini-flash-lite-latest`, which builds a full five-day
+itinerary in about five seconds. Avoid `gemini-flash-latest`: it now resolves to a
+reasoning model that takes roughly two minutes for the same request — long enough that
+the serverless function never returns and no itinerary renders at all.
+
+Every Gemini call is capped by `GEMINI_TIMEOUT` (default 25s) and `GEMINI_CHAT_TIMEOUT`
+(default 15s). Without a cap the SDK waits indefinitely, so a slow call would hang the
+request instead of falling back. Keep these below your host's request timeout.
 
 ## Enable real weather (optional)
 Set `WEATHER_API_KEY` to an [OpenWeather](https://openweathermap.org/api) free-tier key.

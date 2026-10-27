@@ -21,6 +21,7 @@ from database.db import (
     list_hotels, list_restaurants,
     add_review, list_reviews, toggle_review_like,
     create_trip, list_trips, get_trip, delete_trip,
+    stash_itinerary, load_itinerary,
     log_search, recent_searches,
 )
 from config import Config
@@ -53,6 +54,11 @@ def _search_history_terms():
     if not current_user.is_authenticated:
         return []
     return [s['query'] for s in recent_searches(int(current_user.id))]
+
+
+def _last_itinerary():
+    stash_id = session.get('last_itinerary_id')
+    return load_itinerary(stash_id, int(current_user.id)) if stash_id else None
 
 
 @app.route('/')
@@ -237,9 +243,12 @@ def plan_trip():
     itinerary = plan['itinerary']
     ranked = plan['destinations']
 
-    session['last_itinerary'] = {
+    # A full plan is ~9KB of JSON — far past the ~4KB a browser will accept in a
+    # cookie, so stashing it in the session silently dropped it and broke "save
+    # trip" and PDF export. Keep it in Postgres and put only the id in the cookie.
+    session['last_itinerary_id'] = stash_itinerary(int(current_user.id), {
         'form_data': form_data, 'ranked': ranked, 'plan': plan, 'itinerary': itinerary,
-    }
+    })
     if form_data.get('destination_preference'):
         log_search(int(current_user.id), form_data['destination_preference'])
 
@@ -267,7 +276,7 @@ def api_chat():
 @app.route('/trips/save', methods=['POST'])
 @login_required
 def save_trip():
-    data = session.get('last_itinerary')
+    data = _last_itinerary()
     if not data:
         flash('Generate an itinerary first, then save it.', 'error')
         return redirect(url_for('plan_form'))
@@ -298,7 +307,7 @@ def trip_pdf(trip_id):
 @app.route('/itinerary/pdf')
 @login_required
 def itinerary_pdf():
-    data = session.get('last_itinerary')
+    data = _last_itinerary()
     if not data:
         flash('Generate an itinerary first.', 'error')
         return redirect(url_for('plan_form'))

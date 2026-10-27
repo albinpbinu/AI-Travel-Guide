@@ -8,6 +8,14 @@ from services.recommendation import (
     rank_destinations, resolve_start_date, resolve_duration,
 )
 
+
+def _env_int(name, default):
+    try:
+        return int(os.getenv(name, '') or default)
+    except ValueError:
+        return default
+
+
 PROMPT_TEMPLATE = """You are an expert travel planner. Suggest real, well-known destinations that
 genuinely fit the traveler's preferences below, then build a PRACTICAL day-by-day itinerary.
 
@@ -57,6 +65,18 @@ Respond with strict JSON only, no markdown fences, matching exactly this shape:
   "safety_note": "one short safety or advisory note"
 }}
 """
+
+# "gemini-flash-latest" now resolves to a reasoning model that spends 110s+ on a
+# full itinerary — far longer than a serverless request can live, so the function
+# was timing out before anything rendered. The lite model returns the same shape
+# in ~5s. Override with GEMINI_MODEL if you want to trade speed for depth.
+DEFAULT_MODEL = 'gemini-flash-lite-latest'
+
+# Hard ceiling on a single Gemini call. Without one the SDK waits indefinitely,
+# so a slow call hangs the whole request instead of falling back to the local
+# engine. Must stay comfortably under the hosting platform's request timeout.
+PLAN_TIMEOUT_SECONDS = _env_int('GEMINI_TIMEOUT', 25)
+CHAT_TIMEOUT_SECONDS = _env_int('GEMINI_CHAT_TIMEOUT', 15)
 
 EMERGENCY_NUMBERS = {'Police': '100', 'Ambulance': '108', 'Tourist Helpline': '1363'}
 LOCAL_CUSTOMS = [
@@ -145,6 +165,7 @@ def _gemini_plan(form_data, api_key, model_name):
     response = model.generate_content(
         prompt,
         generation_config={"response_mime_type": "application/json"},
+        request_options={"timeout": PLAN_TIMEOUT_SECONDS},
     )
     data = json.loads(response.text)
 
@@ -216,7 +237,7 @@ def _gemini_plan(form_data, api_key, model_name):
 
 def build_ai_plan(form_data, search_history=None):
     api_key = os.getenv('GEMINI_API_KEY', '')
-    model_name = os.getenv('GEMINI_MODEL', 'gemini-flash-latest')
+    model_name = os.getenv('GEMINI_MODEL') or DEFAULT_MODEL
 
     if api_key:
         try:
@@ -238,7 +259,7 @@ def chat_reply(message, history=None):
         import google.generativeai as genai
 
         genai.configure(api_key=api_key)
-        model_name = os.getenv('GEMINI_MODEL', 'gemini-flash-latest')
+        model_name = os.getenv('GEMINI_MODEL') or DEFAULT_MODEL
         model = genai.GenerativeModel(
             model_name,
             system_instruction=(
@@ -249,7 +270,9 @@ def chat_reply(message, history=None):
             ),
         )
         chat = model.start_chat(history=history or [])
-        response = chat.send_message(message)
+        response = chat.send_message(
+            message, request_options={"timeout": CHAT_TIMEOUT_SECONDS}
+        )
         return response.text.strip()
     except Exception as exc:
         print(f"[gemini_service] Chat falling back: {exc}", file=sys.stderr)
