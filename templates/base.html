@@ -61,6 +61,11 @@
         {% block content %}{% endblock %}
     </main>
 
+    {# Modals belong out here: <main> is a z-index:1 stacking context, so a modal
+       nested inside it renders *under* Bootstrap's backdrop (z-index 1050), which
+       leaves the dialog dimmed and swallowing every click. #}
+    {% block modals %}{% endblock %}
+
     <footer class="footer">
         <div class="container py-5">
             <div class="row g-4">

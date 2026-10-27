@@ -6,7 +6,7 @@ from flask_wtf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from services.recommendation import rank_destinations
-from services.gemini_service import build_ai_plan, chat_reply
+from services.gemini_service import build_ai_plan, chat_reply, refine_plan, RefinementUnavailable
 from services.weather_service import get_weather_snapshot
 from services.pdf_service import build_itinerary_pdf
 from services.nearby_service import get_nearby_essentials
@@ -59,6 +59,13 @@ def _search_history_terms():
 def _last_itinerary():
     stash_id = session.get('last_itinerary_id')
     return load_itinerary(stash_id, int(current_user.id)) if stash_id else None
+
+
+def _render_itinerary(data):
+    return render_template(
+        'itinerary.html', itinerary=data['itinerary'], plan=data['plan'],
+        ranked=data['ranked'], form_data=data['form_data'],
+    )
 
 
 @app.route('/')
@@ -246,13 +253,52 @@ def plan_trip():
     # A full plan is ~9KB of JSON — far past the ~4KB a browser will accept in a
     # cookie, so stashing it in the session silently dropped it and broke "save
     # trip" and PDF export. Keep it in Postgres and put only the id in the cookie.
-    session['last_itinerary_id'] = stash_itinerary(int(current_user.id), {
-        'form_data': form_data, 'ranked': ranked, 'plan': plan, 'itinerary': itinerary,
-    })
+    data = {'form_data': form_data, 'ranked': ranked, 'plan': plan, 'itinerary': itinerary}
+    session['last_itinerary_id'] = stash_itinerary(int(current_user.id), data)
     if form_data.get('destination_preference'):
         log_search(int(current_user.id), form_data['destination_preference'])
 
-    return render_template('itinerary.html', itinerary=itinerary, plan=plan, ranked=ranked, form_data=form_data)
+    return _render_itinerary(data)
+
+
+@app.route('/itinerary')
+@login_required
+def itinerary_view():
+    data = _last_itinerary()
+    if not data:
+        flash('Generate an itinerary first.', 'error')
+        return redirect(url_for('plan_form'))
+    return _render_itinerary(data)
+
+
+@app.route('/itinerary/refine', methods=['POST'])
+@login_required
+def refine_itinerary():
+    """Apply a free-text change request to the itinerary the traveler is looking at.
+    Redirects rather than rendering so a refresh doesn't re-run the edit."""
+    data = _last_itinerary()
+    if not data:
+        flash('Generate an itinerary first.', 'error')
+        return redirect(url_for('plan_form'))
+
+    instruction = (request.form.get('instruction') or '').strip()[:600]
+    if not instruction:
+        flash('Tell us what to change first.', 'error')
+        return redirect(url_for('itinerary_view'))
+
+    try:
+        plan, note = refine_plan(data['form_data'], data['plan'], instruction)
+    except RefinementUnavailable as exc:
+        flash(str(exc), 'error')
+        return redirect(url_for('itinerary_view'))
+
+    data = {
+        'form_data': data['form_data'], 'ranked': plan['destinations'],
+        'plan': plan, 'itinerary': plan['itinerary'],
+    }
+    session['last_itinerary_id'] = stash_itinerary(int(current_user.id), data)
+    flash(note or 'Itinerary updated.', 'success')
+    return redirect(url_for('itinerary_view'))
 
 
 @app.route('/api/plan', methods=['POST'])

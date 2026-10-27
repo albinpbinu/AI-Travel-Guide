@@ -97,6 +97,22 @@ main, .app-nav, .footer { position: relative; z-index: 1; }
 }
 .theme-toggle:hover { transform: rotate(18deg); background: var(--surface-strong); }
 
+/* ===== Refine itinerary modal ===== */
+.refine-modal {
+    background: var(--surface-strong);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--shadow);
+    border-radius: 24px;
+    color: var(--text-0);
+}
+.refine-modal .modal-header,
+.refine-modal .modal-footer { border-color: var(--border); }
+.refine-modal textarea.form-control { resize: vertical; min-height: 96px; }
+/* Bootstrap's close glyph is dark artwork; flip it on the dark surface. */
+:root[data-theme="dark"] .refine-modal .btn-close { filter: invert(1) grayscale(100%) brightness(200%); }
+.refine-suggestion { cursor: pointer; }
+
 /* ===== Glass surfaces ===== */
 .glass-card, .destination-card, .glass-alert, .form-shell, .stat-tile, .timeline-card {
     background: var(--surface);
@@ -296,7 +312,7 @@ select:-webkit-autofill {
 
 /* ===== Plan generation loading overlay ===== */
 .plan-loading-overlay {
-    position: fixed; inset: 0; z-index: 100;
+    position: fixed; inset: 0; z-index: 1080;
     display: none; align-items: center; justify-content: center;
     background: color-mix(in srgb, var(--bg-0) 88%, transparent);
     backdrop-filter: blur(10px);

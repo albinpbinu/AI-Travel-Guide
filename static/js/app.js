@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initPasswordMeter();
     initPasswordToggle();
     initPlanLoadingOverlay();
+    initRefineSuggestions();
     initChatWidget();
 });
 
@@ -137,14 +138,39 @@ function initPlanLoadingOverlay() {
         'Double-checking the weather and best times to visit...',
         'Packing your itinerary with local favorites...',
     ];
+    const refineMessages = [
+        'Reading your change request...',
+        'Reworking the affected days...',
+        'Keeping the rest of your plan intact...',
+        'Re-checking travel times and pacing...',
+        'Updating budgets and recommendations...',
+    ];
+    const titleEl = overlay.querySelector('h4');
+
     document.querySelectorAll('[data-plan-form]').forEach((form) => {
         form.addEventListener('submit', function () {
+            const custom = form.dataset.loadingTitle;
+            const lines = custom ? refineMessages : messages;
+            if (custom && titleEl) titleEl.textContent = custom;
+            if (messageEl) messageEl.textContent = lines[0];
             overlay.classList.add('open');
             let i = 0;
             setInterval(function () {
-                i = (i + 1) % messages.length;
-                if (messageEl) messageEl.textContent = messages[i];
+                i = (i + 1) % lines.length;
+                if (messageEl) messageEl.textContent = lines[i];
             }, 2200);
+        });
+    });
+}
+
+/* ---------- Refine modal suggestion chips ---------- */
+function initRefineSuggestions() {
+    const box = document.querySelector('#refineModal textarea[name="instruction"]');
+    if (!box) return;
+    document.querySelectorAll('.refine-suggestion').forEach((chip) => {
+        chip.addEventListener('click', function () {
+            box.value = chip.textContent.trim();
+            box.focus();
         });
     });
 }
