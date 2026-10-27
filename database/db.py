@@ -22,6 +22,15 @@ def _get_pool(app):
             conninfo=app.config['DATABASE_URL'],
             min_size=1, max_size=5,
             kwargs={'row_factory': dict_row},
+            # Neon closes idle connections and suspends the compute on the free
+            # tier, so a pooled connection can be dead long before we reuse it.
+            # Without this check the pool hands out the dead socket and the
+            # request dies with "server closed the connection unexpectedly".
+            # check_connection pings first and quietly replaces anything stale.
+            check=ConnectionPool.check_connection,
+            # Recycle before Neon's own idle cutoff rather than after it.
+            max_idle=120.0,
+            open=True,
         )
     return _pool
 
